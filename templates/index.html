@@ -1,0 +1,94 @@
+<!-- In templates/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Shopper - Price Tracker</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 40px 50px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        h1 { color: #343a40; margin-bottom: 10px; }
+        p { color: #6c757d; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #495057; }
+        input { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1rem; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; font-size: 1.1rem; font-weight: bold; color: #fff; background-color: #28a745; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #218838; }
+        #message { margin-top: 20px; padding: 10px; border-radius: 5px; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 Smart Shopper</h1>
+        <p>Enter an Amazon product URL to track its price. We'll email you when it drops!</p>
+        
+        <form id="tracker-form">
+            <div class="form-group">
+                <label for="product-url">Product URL</label>
+                <input type="url" id="product-url" placeholder="https://www.amazon.com/..." required>
+            </div>
+            <div class="form-group">
+                <label for="target-price">Target Price ($)</label>
+                <input type="number" id="target-price" step="0.01" placeholder="e.g., 49.99" required>
+            </div>
+            <div class="form-group">
+                <label for="user-email">Your Email</label>
+                <input type="email" id="user-email" placeholder="you@example.com" required>
+            </div>
+            <button type="submit">Track Product</button>
+        </form>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('tracker-form');
+        const messageDiv = document.getElementById('message');
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent the form from submitting the traditional way
+
+            const url = document.getElementById('product-url').value;
+            const price = document.getElementById('target-price').value;
+            const email = document.getElementById('user-email').value;
+
+            messageDiv.textContent = 'Submitting...';
+            messageDiv.className = '';
+
+            try {
+                const response = await fetch('/api/track', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        product_url: url,
+                        target_price: price,
+                        user_email: email
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // If the server returns an error (4xx or 5xx)
+                    throw new Error(data.error || 'An unknown error occurred.');
+                }
+                
+                // Handle success
+                messageDiv.textContent = data.message;
+                messageDiv.className = 'success';
+                form.reset(); // Clear the form
+
+            } catch (error) {
+                // Handle failure
+                messageDiv.textContent = `Error: ${error.message}`;
+                messageDiv.className = 'error';
+                console.error('Submission failed:', error);
+            }
+        });
+    </script>
+</body>
+</html>
